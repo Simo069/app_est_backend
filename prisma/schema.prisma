@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ENUMS 
+enum Role {
+  STUDENT
+  DELEGATE
+  ADMIN
+}
+
+enum ResourceType {
+  COURSE
+  TD
+  TP
+  EXAM
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+
+  // STUDENT par défaut
+  role Role @default(STUDENT)
+
+  // Relation : une filière contient plusieurs utilisateurs
+  //
+  // STUDENT  -> une seule filière
+  // DELEGATE -> une seule filière
+  // ADMIN    -> peut ne pas avoir de filière
+  // ────────────────────────────────
+
+  filiereId String?
+  filiere   Filiere? @relation( "UserFiliere", fields: [filiereId],references: [id],onDelete: SetNull,onUpdate: Cascade)
+
+  delegateOfFiliereId String? @unique
+
+  delegateOfFiliere Filiere? @relation( "FiliereDelegate", fields: [delegateOfFiliereId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // Ressources uploadées par cet utilisateur
+  uploadedResources Resource[] @relation("UploadedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([filiereId])
+}
+
+// ────────────────────────────────
+// NIVEAU
+//
+// Un niveau possède plusieurs filières.
+//
+// Exemple :
+//
+// Niveau : Master 1
+// ├── Data Science
+// ├── Génie Informatique
+// └── Cybersécurité
+// ────────────────────────────────
+
+model Niveau {
+  id    String @id @default(uuid())
+  name  String
+
+  // Pour trier les niveaux
+  // Exemple : 1, 2, 3...
+  order Int
+
+  filieres Filiere[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Pas deux niveaux avec le même ordre
+  @@unique([order])
+}
+
+// FILIERE
+//
+// Une filière appartient à un niveau.
+// Une filière possède plusieurs semestres.
+// Une filière possède plusieurs étudiants.
+// Une filière possède au maximum un délégué.
+// ────────────────────────────────
+
+model Filiere {
+  id   String @id @default(uuid())
+  name String
+
+  // Exemple : GINF, DATA, CYBER
+  code String? @unique
+
+  // ────────────────────────────────
+  // Relation avec Niveau
+  // Niveau 1 ───── * Filiere
+  // ────────────────────────────────
+
+  niveauId String
+  niveau   Niveau @relation( fields: [niveauId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // ────────────────────────────────
+  // Relation avec Semestre
+  // Filiere 1 ───── * Semestre
+  // ────────────────────────────────
+
+  semestres Semestre[]
+
+  // ────────────────────────────────
+  // Utilisateurs appartenant à cette filière
+  //
+  // Filiere 1 ───── * User
+  // ────────────────────────────────
+
+  users User[] @relation("UserFiliere")
+
+  // ────────────────────────────────
+  // Le délégué unique de la filière
+  //
+  // Filiere 1 ───── 0..1 User
+  // ────────────────────────────────
+
+  delegate User? @relation("FiliereDelegate")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([niveauId])
+}
+
+// SEMESTRE
+//
+// Une filière possède plusieurs semestres.
+// Un semestre possède plusieurs modules.
+//
+// Exemple :
+//
+// Génie Informatique
+// ├── Semestre 1
+// ├── Semestre 2
+// ├── Semestre 3
+// └── Semestre 4
+// ────────────────────────────────
+
+model Semestre {
+  id   String @id @default(uuid())
+  name String
+
+  // Exemple : 1, 2, 3...
+  order Int
+
+  // ────────────────────────────────
+  // Relation avec Filiere
+  // ────────────────────────────────
+
+  filiereId String
+  filiere   Filiere @relation( fields: [filiereId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // ────────────────────────────────
+  // Modules du semestre
+  // ────────────────────────────────
+
+  modules Module[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([filiereId])
+
+  // Pas deux semestres avec le même ordre
+  // dans la même filière
+  @@unique([filiereId, order])
+}
+
+// ────────────────────────────────
+// MODULE
+//
+// Un semestre possède plusieurs modules.
+//
+// Exemple :
+//
+// Semestre 1
+// ├── Algorithmique
+// ├── Base de données
+// ├── Programmation Web
+// └── Réseaux
+// ────────────────────────────────
+
+model Module {
+  id   String @id @default(uuid())
+  name String
+
+  // Exemple : ALG101
+  code String?
+
+  // ────────────────────────────────
+  // Relation avec Semestre
+  //
+  // Semestre 1 ───── * Module
+  // ────────────────────────────────
+
+  semestreId String
+
+  semestre Semestre @relation(fields: [semestreId],references: [id],onDelete: Cascade,onUpdate: Cascade)
+
+  // ────────────────────────────────
+  // Resources du module
+  //
+  // Module 1 ───── * Resource
+  // ────────────────────────────────
+
+  resources Resource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([semestreId])
+}
+
+// ────────────────────────────────
+// RESOURCE
+//
+// Une ressource peut être :
+//
+// COURSE
+// TD
+// TP
+//
+// Le fichier est stocké dans MinIO.
+// PostgreSQL stocke uniquement les
+// informations sur le fichier.
+// ────────────────────────────────
+
+model Resource {
+  id    String @id @default(uuid())
+  title String
+
+  // COURSE / TD / TP
+  type ResourceType
+
+  // ────────────────────────────────
+  // Informations du fichier
+  // ────────────────────────────────
+
+  filename  String
+  mimeType  String
+  sizeBytes Int
+
+  // Exemple :
+  // "course-materials"
+  bucket String
+
+  // Exemple :
+  // "modules/alg101/chapitre-1.pdf"
+  objectKey String
+
+  // ────────────────────────────────
+  // Module auquel appartient la ressource
+  //
+  // Module 1 ───── * Resource
+  // ────────────────────────────────
+
+  moduleId String
+
+  module Module @relation(fields: [moduleId],references: [id],onDelete: Cascade,onUpdate: Cascade)
+
+  // ────────────────────────────────
+  // Utilisateur qui a uploadé la ressource
+  //
+  // User 1 ───── * Resource
+  // ────────────────────────────────
+
+  uploadedById String
+
+  uploadedBy User @relation("UploadedBy",fields: [uploadedById],references: [id],onDelete: Restrict,onUpdate: Cascade)
+
+  // Nombre de téléchargements
+  downloadCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+
+  // Pour récupérer rapidement les COURSE,
+  // TD ou TP d'un module
+  @@index([moduleId, type])
+
+  @@index([uploadedById])
+}
