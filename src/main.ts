@@ -16,7 +16,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:4700', 'http://localhost:5173'],
+      : ['http://localhost:3000', 'http://localhost:4700', 'http://localhost:5173', 'https://app-est-frontend.vercel.app'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-range', 'X-Total-Count'],
