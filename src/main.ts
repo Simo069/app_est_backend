@@ -13,12 +13,29 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix('api');
 
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:4700',
+    'http://localhost:5173',
+    'https://app-est-frontend.vercel.app',
+  ];
+
+  const envOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : [];
+
+  const allowedOrigins = [...defaultOrigins, ...envOrigins];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:4700', 'http://localhost:5173', 'https://app-est-frontend.vercel.app'],
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Content-range', 'X-Total-Count'],
     maxAge: 600,
     credentials: true,
