@@ -18,7 +18,8 @@ async function bootstrap() {
     'http://localhost:4700',
     'http://localhost:5173',
     'https://app-est-frontend.vercel.app',
-    'https://app-est-frontend-baoj0xqqb-9ri9ibas-projects.vercel.app'
+    'https://app-est-frontend-baoj0xqqb-9ri9ibas-projects.vercel.app',
+    'https://www.estc.space/'
   ];
 
   const envOrigins = process.env.CORS_ORIGINS
