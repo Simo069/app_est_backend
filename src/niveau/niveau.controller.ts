@@ -1,3 +1,4 @@
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { CreateNiveauDto } from './dto/create-niveau.dto';
 import { UpdateNiveauDto } from './dto/update-niveau.dto';
 import { NiveauService } from './niveau.service';
@@ -11,6 +12,7 @@ import {
   Delete,
   HttpCode,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth-guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -29,6 +31,8 @@ export class NiveauController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600000)
   @HttpCode(200)
   async findAll() {
     return await this.niveauService.findAll();

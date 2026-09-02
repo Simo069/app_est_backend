@@ -1,3 +1,4 @@
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import {
     Body,
     Controller,
@@ -9,6 +10,7 @@ import {
     Patch,
     Post,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ModulesService } from './modules.service';
 import { CreateModulesDto } from './dto/create-modules.dto';
@@ -30,12 +32,16 @@ export class ModulesController {
     }
 
     @Get()
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(300000)
     @HttpCode(200)
     findAll(){
         return this.modulesService.findAll();
     }
 
     @Get('semestre/:semestreId')
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(300000)
     @HttpCode(200)
     findBySemestreId(@Param('semestreId') semestreId : string){
         return this.modulesService.findbySemestreId(semestreId);

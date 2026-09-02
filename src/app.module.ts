@@ -16,24 +16,30 @@ import { MinioModule } from './minio/minio.module';
 import { RessourcesModule } from './ressources/ressources.module';
 import { AuthModule } from './auth/auth.module';
 
+import { CacheModule } from '@nestjs/cache-manager';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300000, // 5 minutes en millisecondes
+    }),
     ThrottlerModule.forRoot([
       {
         name: 'short',
         ttl: 1000,
-        limit: 3,
+        limit: 10,
       },
       {
         name: 'medium',
         ttl: 10000,
-        limit: 10,
+        limit: 50,
       },
       {
         name: 'long',
         ttl: 100000,
-        limit: 100,
+        limit: 300,
       },
     ]),
     UsersModule,

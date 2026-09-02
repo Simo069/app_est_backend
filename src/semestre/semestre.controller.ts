@@ -1,3 +1,4 @@
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
@@ -9,6 +10,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateSemestreDto } from './dto/create-semestre.dto';
 import { UpdateSemestreDto } from './dto/update-semestre.dto';
@@ -30,12 +32,16 @@ export class SemestreController {
     }
 
     @Get()
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(600000)
     @HttpCode(200)
     findAll(){
         return this.semestreService.findAll();
     }
     
     @Get('filiere/:filiereId')
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(600000)
     @HttpCode(200)
     findByFiliereId(@Param('filiereId') filiereId : string){
         return this.semestreService.findByFiliereId(filiereId);

@@ -1,3 +1,4 @@
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
@@ -9,6 +10,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FiliereService } from './filiere.service';
 import { CreateFiliereDto } from './dto/create-filiere.dto';
@@ -30,12 +32,16 @@ export class FiliereController {
     }
 
     @Get()
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(600000)
     @HttpCode(200)
     findAll(){
         return this.filiereService.findAll();
     }
 
     @Get('niveau/:niveauId')
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(600000)
     @HttpCode(200)
     findByNiveau(@Param('niveauId') niveauId : string){
         return this.filiereService.findByNiveauId(niveauId);
